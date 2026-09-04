@@ -1,0 +1,78 @@
+# 团队分工与交付说明（Java / Spring Boot 版）
+
+> 适用：5 人学生团队，HR 数字员工方向（多智能体协同）。
+> 开发平台：**Java / Spring Boot**（主仓库 `hr-agent-team`，后端与 agent 同一套）。
+> 技能口径：**5 个数字员工 = 5 个技能 = 5 个 Agent `run()`**（原 12 已整合）。技能权威清单见 `文档库\02_契约与技能\SKILLS技能注册表.md`。
+> 使用文档：成员开工看主仓库内《入门说明书》+ 各自《成员手册》；上传看《SKILL-上传规则.md》。
+
+---
+
+## 0. 总览
+
+| 成员 | 数字员工 | 一句话职责 | 只准改的 Java 类 |
+|---|---|---|---|
+| A | 招聘分析师 | 模糊诉求 → 结构化 JD + 能力画像 | `agent/analyst/AnalystAgent.java` |
+| B | 简历猎手 | 简历解析 + 按 JD 初筛打分 | `agent/scout/ScoutAgent.java` |
+| C | 面试官 | 出题 + 问答纪要 + 给结论 | `agent/interviewer/InterviewerAgent.java` |
+| D | 测评背调员 | 技能测评 + 真实性核查 + 文化匹配 | `agent/assessor/AssessorAgent.java` |
+| E | offer 与入职管家 | offer/谈薪建议 + 30 天入职计划 | `agent/concierge/ConciergeAgent.java` |
+
+**依赖链（决定整合顺序）**：A → B → C → D → E
+
+---
+
+## 1. 统一技术栈（Java / Spring Boot）
+
+- 工程：Maven + Spring Boot（Java 17），主仓库 `hr-agent-team`；
+- 每个数字员工 = 一个实现 `Agent` 接口的类，`run(Map payload) → Map`（吃进 JSON、吐出 JSON）；
+- 调模型只用共享类 `common/DeepSeekClient` 的 `callJson` / `call`；
+- 每个成员用 IDEA 打开工程，配 `DEEPSEEK_API_KEY`，右键运行自己的 `main` 自测；
+- 前端（HTML/JS/CSS）与网页后端是**最后阶段**的事，现在不做。
+- 🔧 **硬性规定**：每个 agent 必须**真调用至少一个共享工具**把成果落成文件（.csv/.html），不只生成文字；工具实现与 function-calling 由共享层/整合者提供，成员只需在 ROLE 里声明"何时调哪个工具"（详见 `文档库\02_契约与技能\工具调用规范.md`）。
+
+## 2. 五个人的技能 = 五份活（各自只做一个技能，内含子步骤）
+
+| 技能 | 成员 | 内部子步骤(原12) | run() 产出 |
+|---|---|---|---|
+| `talent.analyze` | A | demand.clarify · jd.generate · persona.build | `jd{...}`、`persona{...}`、`demand`、`reason` |
+| `resume.screen` | B | resume.parse · resume.score | `resume{...}`、`score`、`verdict`、`matched[]`、`gaps[]` |
+| `interview.run` | C | interview.plan · interview.run | `plan{...}` 或 `minutes{...}` |
+| `assess.review` | D | assess.skill · assess.integrity · assess.culture | `level`、`score`、`risk_level`、`findings[]`、`fit_score` |
+| `offer.onboard` | E | offer.generate · onboard.plan | `offer{...}`、`plan{...}`、`screening_feedback` |
+
+> 每个成员**现阶段只交付一样东西**：改好你自己的 Java 类（`ROLE` + `run()`），自测能吐合法 JSON 即可。
+
+## 3. 每人现阶段要做 / 交付（给整合者 4 样）
+
+1. 改好你的 Java 类（只改你那一格）；
+2. 你的 `ROLE` 全文；
+3. 1 组输入样例 + 期望输出；
+4. 一句输出字段说明。
+
+## 4. 整合者（一人）负责
+
+1. 收齐 4 份交付后，写 `dispatcher`：按 A→B→C→D→E 顺序调用各 `run()`，把上一步输出喂给下一步；
+2. 补人工确认节点（offer 前）；
+3. 后续阶段：写 REST 接口 + 前端 HTML/JS/CSS（网页只是最终展示层，放最后）。
+
+## 5. 依赖与验收
+
+| 成员 | 上游 | 下游 | 自测验收 |
+|---|---|---|---|
+| A | 无 | B | `AnalystAgent.main` 打印含 `jd/persona` 的 JSON |
+| B | A | C | `ScoutAgent.main` 打印含 `verdict`(合法) 的 JSON |
+| C | B | D | `InterviewerAgent.main` 打印含 `plan/minutes` 的 JSON |
+| D | C | E | `AssessorAgent.main` 打印枚举合法的 JSON |
+| E | D | 无 | `ConciergeAgent.main` 打印含 `offer` 的 JSON |
+
+## 6. 协作节奏（对应阶段）
+
+| 阶段 | 内容 |
+|---|---|
+| 现在 | 5 人各写自己的 Java agent → 单人自测过关 |
+| 之后 | 整合者写 dispatcher 串联 A→E |
+| 最后 | Spring Boot 接口 + 前端网页（HTML/JS/CSS）|
+
+---
+
+*细节见主仓库《README》《入门说明书》《成员手册》《SKILL-上传规则》。本文件只讲分工与技能口径。*

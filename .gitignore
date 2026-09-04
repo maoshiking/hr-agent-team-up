@@ -1,0 +1,22 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Maven / Java
+target/
+**/target/
+
+# 运行生成的成果 demo（doc_writer 输出），不提交
+hr-agent-team/demo/
+demo/
+
+# 环境/密钥
+.env
+*.key
+application-local.properties
+
+# 杂项
+.DS_Store
+*.log
+Thumbs.db
