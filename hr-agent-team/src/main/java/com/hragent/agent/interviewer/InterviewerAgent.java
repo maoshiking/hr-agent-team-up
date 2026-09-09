@@ -17,15 +17,16 @@ import java.util.Map;
  */
 public class InterviewerAgent implements Agent {
 
+    // TODO(成员 C)：按你的判断完善这段 ROLE。
     private static final String ROLE =
-            "你是招聘流程第三步的线上面试官。\n" +
-            "输入可能包含 industry、promptPack、jd、resume、transcript；promptPack 是本场冻结的行业题库和评分维度，必须优先遵守。\n" +
-            "没有非空 transcript 时，只生成 plan：覆盖通用素质题、行业专业题、线上协作情景题和反向提问，并注明时长、考察目标和事实证据。\n" +
-            "有非空 transcript 时，只生成 minutes：按问答总结评分，并根据回答中的项目、角色、技术、数字和决策提出至多两次引用式追问建议。\n" +
-            "只能输出 JSON：plan{questions[]{text,intent},rubric[]{dimension,weight}} 或 minutes{summary,qa[]{question,answer,score},verdict}，以及 reason。\n" +
-            "score 必须为 0-100 整数，verdict 只能 shortlist / hold / reject；证据不足使用 hold。\n" +
-            "禁止编造，禁止根据外貌、表情、眼神、情绪、声音、人脸或视频状态评分；视频事件只能触发人工复核。\n" +
-            "风格：结论→依据→风险→下一步。";
+            "你是面试官，招聘流程第三步的数字员工。\n" +
+            "职责：\n" +
+            "  1) 若输入只有 jd/resume（无 transcript）：生成结构化面试题纲；\n" +
+            "  2) 若输入含 transcript（问答记录）：生成面试纪要并给录用判定。\n" +
+            "输出 JSON：题纲用 plan{ questions[]{text,intent}, rubric[]{dimension,weight} }；"
+            + "纪要用 minutes{ summary, qa[]{question,answer,score}, verdict }。\n" +
+            "verdict 只能 shortlist / hold / reject。\n" +
+            "风格：先结论、后依据、再风险、再下一步；禁止编造。";
 
     private final DeepSeekClient client = new DeepSeekClient();
 
@@ -34,47 +35,17 @@ public class InterviewerAgent implements Agent {
         try {
             String userInput = "请根据以下输入完成任务。\n输入 JSON：\n" + payload;
             Map<String, Object> result = client.callJson(ROLE, userInput);
-            boolean hasTranscript = hasNonBlankTranscript(payload);
-            validateResult(result, hasTranscript);
 
             // 🔧 真调用 doc_writer：把题纲/纪要落成成果文件
+            boolean hasTranscript = payload.containsKey("transcript");
             AgentTools.writeDoc("md",
                     hasTranscript ? "interview_minutes.md" : "interview_plan.md",
                     AgentTools.toMarkdown(hasTranscript ? "面试纪要" : "面试题纲", result));
 
+            // TODO(成员 C)：校验字段（含 transcript 时应有 verdict）。
             return result;
         } catch (Exception e) {
             throw new RuntimeException("InterviewerAgent 执行失败", e);
-        }
-    }
-
-    private boolean hasNonBlankTranscript(Map<String, Object> payload) {
-        Object transcript = payload == null ? null : payload.get("transcript");
-        return transcript != null && !String.valueOf(transcript).isBlank();
-    }
-
-    private void validateResult(Map<String, Object> result, boolean minutesMode) {
-        if (result == null) throw new IllegalArgumentException("模型返回为空");
-        String root = minutesMode ? "minutes" : "plan";
-        if (!(result.get(root) instanceof Map<?, ?> value)) throw new IllegalArgumentException("缺少输出字段：" + root);
-        if (minutesMode) {
-            String verdict = String.valueOf(value.get("verdict"));
-            if (!java.util.List.of("shortlist", "hold", "reject").contains(verdict)) {
-                throw new IllegalArgumentException("非法 verdict：" + verdict);
-            }
-            if (!(value.get("qa") instanceof java.util.List<?> qa)) throw new IllegalArgumentException("minutes.qa 必须是数组");
-            for (Object item : qa) {
-                if (!(item instanceof Map<?, ?> row) || !(row.get("score") instanceof Number)
-                        || ((Number) row.get("score")).doubleValue() % 1 != 0
-                        || ((Number) row.get("score")).intValue() < 0 || ((Number) row.get("score")).intValue() > 100
-                        || String.valueOf(row.get("answer") == null ? "" : row.get("answer")).isBlank()) {
-                    throw new IllegalArgumentException("minutes.qa.score 必须是 0-100");
-                }
-            }
-        } else {
-            if (!(value.get("questions") instanceof java.util.List<?>) || !(value.get("rubric") instanceof java.util.List<?>)) {
-                throw new IllegalArgumentException("plan.questions 和 plan.rubric 必须是数组");
-            }
         }
     }
 

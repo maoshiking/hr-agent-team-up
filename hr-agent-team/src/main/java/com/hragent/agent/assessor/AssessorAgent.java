@@ -16,6 +16,7 @@ import java.util.Map;
  */
 public class AssessorAgent implements Agent {
 
+    // TODO(成员 D)：按你的判断完善这段 ROLE。
     private static final String ROLE =
             "你是测评背调员，招聘流程第四步的数字员工。\n" +
             "职责：对候选人做技能测评、经历真实性核查、文化/团队匹配。\n" +
@@ -36,43 +37,15 @@ public class AssessorAgent implements Agent {
         try {
             String userInput = "请根据以下输入完成任务。\n输入 JSON：\n" + payload;
             Map<String, Object> result = client.callJson(ROLE, userInput);
-            validate(result);
 
             // 🔧 真调用 doc_writer：把测评结果落成报告文件
             AgentTools.writeDoc("md", "assessor_report.md",
                     AgentTools.toMarkdown("候选人测评报告", result));
 
+            // TODO(成员 D)：校验 level / risk_level 枚举合法、risk 项带 evidence。
             return result;
         } catch (Exception e) {
             throw new RuntimeException("AssessorAgent 执行失败", e);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void validate(Map<String, Object> result) {
-        if (result == null) throw new IllegalArgumentException("测评结果为空");
-        String level = String.valueOf(result.get("level"));
-        String risk = String.valueOf(result.get("risk_level"));
-        if (!java.util.List.of("expert", "proficient", "basic", "none").contains(level)) {
-            throw new IllegalArgumentException("非法 level");
-        }
-        if (!java.util.List.of("low", "medium", "high").contains(risk)) {
-            throw new IllegalArgumentException("非法 risk_level");
-        }
-        requireScore(result.get("score"), "score");
-        requireScore(result.get("fit_score"), "fit_score");
-        Object findings = result.get("findings");
-        if (!(findings instanceof java.util.List<?> list)) throw new IllegalArgumentException("findings 必须是数组");
-        for (Object item : list) {
-            if (!(item instanceof Map<?, ?> row) || String.valueOf(row.get("evidence") == null ? "" : row.get("evidence")).isBlank()) {
-                throw new IllegalArgumentException("每条 finding 必须包含 evidence");
-            }
-        }
-    }
-
-    private void requireScore(Object value, String field) {
-        if (!(value instanceof Number n) || n.doubleValue() % 1 != 0 || n.intValue() < 0 || n.intValue() > 100) {
-            throw new IllegalArgumentException(field + " 必须是 0-100 整数");
         }
     }
 

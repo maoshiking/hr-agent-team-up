@@ -20,15 +20,7 @@ hr-agent-team/
     │   ├── Agent.java                          共享·接口（不要改）
     │   ├── analyst/AnalystAgent.java           成员 A 专属：招聘分析师
     │   ├── scout/ScoutAgent.java               成员 B 专属：简历猎手
-    │   ├── interviewer/InterviewerAgent.java   成员 C 专属：面试官入口
-    │   │   ├── controller/                    面试 API
-    │   │   ├── session/                       会话状态机
-    │   │   ├── prompt/                        行业题库与 PromptPack
-    │   │   ├── media/                         媒体分片与本地风险信号
-    │   │   ├── realtime/                      字幕、追问、WebSocket
-    │   │   ├── scoring/                       评分卡计算
-    │   │   ├── persistence/                   JDBC 快照与事件日志
-    │   │   └── security/                      会话与复核鉴权
+    │   ├── interviewer/InterviewerAgent.java   成员 C 专属：面试官
     │   ├── assessor/AssessorAgent.java         成员 D 专属：测评背调员
     │   └── concierge/ConciergeAgent.java       成员 E 专属：offer 与入职管家
     └── dispatcher/                             (整合者后续写) 按顺序串联 5 个 agent
@@ -46,17 +38,9 @@ hr-agent-team/
 
 ## 怎么跑
 
-1. 用 **IDEA** 打开本目录，或执行 `mvn spring-boot:run`；
-2. 可选配置 `DEEPSEEK_API_KEY`（没有 Key 时题纲/纪要走模板降级）；
-3. 浏览器打开 `http://localhost:8080/interview.html`，创建会话后按页面流程授权、开始和提交；
-4. H2 文件库默认在 `./data/hr-agent`，生产通过 `HR_DB_URL/HR_DB_USER/HR_DB_PASSWORD` 切换数据库；
-5. 媒体目录由 `HR_MEDIA_DIR` 配置，默认 `target/interview-media`；生产设置 `HR_ENV=prod`、`HR_MEDIA_ENCRYPTION_KEY`（或 `HR_REQUIRE_MEDIA_ENCRYPTION=true`），保留期由 `HR_MEDIA_RETENTION_DAYS` 配置（默认 7 天）。
-
-### API 顺序与鉴权
-
-`POST /api/interviews` 创建会话会返回一次性 `access_token`。后续 REST 请求必须带 `X-Interview-Token`；浏览器先调用 `/{id}/live-ticket`，再使用一次性 `?ticket=` 连接 WebSocket。人工复核、结果和交接接口还必须配置 `HR_REVIEWER_TOKEN` 并携带 `X-Reviewer-Token`。本地临时调试可设置 `HR_REQUIRE_AUTH=false`，生产应保持开启。
-
-主要接口顺序：`consent → prepare → start → responses/captions/video-events/media/chunks → complete → score(异步) → review → handoff`。媒体上传完成后调用 `POST /api/interviews/{id}/media/{mediaId}/complete`，可用 `?sha256=` 校验合并文件。
+1. 用 **IDEA** 打开本目录（自动按 `pom.xml` 拉依赖）；
+2. 先配环境变量 `DEEPSEEK_API_KEY`；
+3. 每个 agent 自带一个 `main()` 可自测：右键运行你的类，能打印出 JSON 就过关。
 
 ## 三条铁律
 
