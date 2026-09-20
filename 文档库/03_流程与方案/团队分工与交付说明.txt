@@ -27,7 +27,7 @@
 - 每个数字员工 = 一个实现 `Agent` 接口的类，`run(Map payload) → Map`（吃进 JSON、吐出 JSON）；
 - 调模型只用共享类 `common/DeepSeekClient` 的 `callJson` / `call`；
 - 每个成员用 IDEA 打开工程，配 `DEEPSEEK_API_KEY`，右键运行自己的 `main` 自测；
-- 前端（HTML/JS/CSS）与网页后端是**最后阶段**的事，现在不做。
+- 前端（Vue 3 + Vite 单页应用）与网页后端是**最后阶段**的事，现在不做。
 - 🔧 **硬性规定**：每个 agent 必须**真调用至少一个共享工具**把成果落成文件（.csv/.html），不只生成文字；工具实现与 function-calling 由共享层/整合者提供，成员只需在 ROLE 里声明"何时调哪个工具"（详见 `文档库\02_契约与技能\工具调用规范.md`）。
 
 ## 2. 五个人的技能 = 五份活（各自只做一个技能，内含子步骤）
@@ -53,7 +53,7 @@
 
 1. 收齐 4 份交付后，写 `dispatcher`：按 A→B→C→D→E 顺序调用各 `run()`，把上一步输出喂给下一步；
 2. 补人工确认节点（offer 前）；
-3. 后续阶段：写 REST 接口 + 前端 HTML/JS/CSS（网页只是最终展示层，放最后）。
+3. 后续阶段：写 REST 接口 + 前端 Vue 3 + Vite（网页只是最终展示层，放最后）。
 
 ## 5. 依赖与验收
 
@@ -71,7 +71,7 @@
 |---|---|
 | 现在 | 5 人各写自己的 Java agent → 单人自测过关 |
 | 之后 | 整合者写 dispatcher 串联 A→E |
-| 最后 | Spring Boot 接口 + 前端网页（HTML/JS/CSS）|
+| 最后 | Spring Boot 接口 + 前端网页（Vue 3 + Vite）|
 
 ---
 

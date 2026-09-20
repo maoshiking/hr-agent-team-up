@@ -7,14 +7,25 @@
 target/
 **/target/
 
-# 运行生成的成果 demo（doc_writer 输出），不提交
-hr-agent-team/demo/
+# 运行生成的成果（doc_writer 输出），不提交
+#   hr-agent-team/out/ 是现在的默认输出目录（以前默认写进 demo/，会把演示样例淹掉）
+out/
+hr-agent-team/out/
 demo/
+hr-agent-team/demo/
 
 # 环境/密钥
 .env
 *.key
 application-local.properties
+# 部署时的本地配置（里面有 API Key，别提交）
+deploy/.env
+
+# 生成的部署包（只有部署所需文件的最小集合，随时可用 node deploy/打包.mjs 重新生成）
+部署包/
+
+# 部署时容器写出的成果文件（挂载目录）
+data/
 
 # 杂项
 .DS_Store
