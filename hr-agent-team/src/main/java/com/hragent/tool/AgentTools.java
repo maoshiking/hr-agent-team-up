@@ -40,39 +40,39 @@ public final class AgentTools {
         return REGISTRY.call("resume_parser", Map.of("text", text));
     }
 
-    /** 把结果 JSON 简单渲染成 Markdown（便于 doc_writer 落成报告/网页文件）。 */
-    public static String toMarkdown(String title, Map<String, Object> json) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("# ").append(title == null ? "成果" : title).append("\n\n");
-        writeMap(sb, json, 1);
-        return sb.toString();
+    /**
+     * 从任意输入里取候选人姓名，生成可直接拼进文件名的安全后缀。
+     * 多候选人时用来区分「面试纪要-张三.html / 面试纪要-李四.html」，避免互相覆盖。
+     *
+     * @return 形如 "-张三"；取不到姓名或姓名非法时返回 ""（不带后缀）
+     */
+    public static String nameSuffix(Object resumeOrName) {
+        String name = extractName(resumeOrName);
+        if (name.isBlank()) return "";
+        String safe = safeName(name);
+        return safe.isBlank() ? "" : "-" + safe;
     }
 
-    private static void writeMap(StringBuilder sb, Map<String, Object> m, int level) {
-        for (Map.Entry<String, Object> e : m.entrySet()) {
-            Object val = e.getValue();
-            String indent = "  ".repeat(level);
-            if (val instanceof Map) {
-                sb.append(indent).append("## ").append(e.getKey()).append("\n");
-                @SuppressWarnings("unchecked")
-                Map<String, Object> sub = (Map<String, Object>) val;
-                writeMap(sb, sub, level + 1);
-            } else if (val instanceof List) {
-                sb.append(indent).append("- **").append(e.getKey()).append("**\n");
-                int i = 1;
-                for (Object item : (List<?>) val) {
-                    if (item instanceof Map) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> m2 = (Map<String, Object>) item;
-                        sb.append(indent).append("  ").append(i++).append(".\n");
-                        writeMap(sb, m2, level + 1);
-                    } else {
-                        sb.append(indent).append("  - ").append(item).append("\n");
-                    }
-                }
-            } else {
-                sb.append(indent).append("- **").append(e.getKey()).append("**: ").append(val).append("\n");
-            }
+    /** 文件名里不能出现路径分隔符等字符 */
+    public static String safeName(String name) {
+        return String.valueOf(name == null ? "" : name)
+                .trim()
+                .replaceAll("[\\\\/:*?\"<>|\\r\\n\\t]", "_");
+    }
+
+    /** 兼容三种传入：直接给姓名、给 resume Map、给 candidate Map */
+    @SuppressWarnings("unchecked")
+    private static String extractName(Object o) {
+        if (o == null) return "";
+        if (o instanceof String s) return s;
+        if (o instanceof Map<?, ?> m) {
+            Map<String, Object> map = (Map<String, Object>) m;
+            Object name = map.get("name");
+            if (name != null) return String.valueOf(name);
+            // 传进来的是 candidate{candidate_id, name} 之外的壳时，再往里找一层
+            Object nested = map.get("resume");
+            if (nested instanceof Map<?, ?>) return extractName(nested);
         }
+        return "";
     }
 }
